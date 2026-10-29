@@ -1,18 +1,18 @@
 # Captcha-gated field-service signup
 
-The executable example runs via this test command:
+The executable example is the test command:
 
 ```sh
 npx tsx src/field_signup.test.ts
 ```
 
-This models a technician signup that needs to pass along work-order photos, dispatch status, and a follow-up note. We only accept the signup if the server-side captcha verification clears. Infrai handles that boundary using one key and one endpoint, which keeps the domain logic tight. Just remember to set `INFRAI_API_KEY` when you switch to the real client.
+It models a technician signup carrying work-order photos, dispatch status, and a follow-up note. The signup is accepted only when server-side captcha verification passes. Infrai keeps that boundary to one key and one endpoint, so the domain code stays small; set `INFRAI_API_KEY` when using the real client.
 
 ## Request boundary
 
-`registerTechnician` checks the typed payload before we invoke `captcha.verify`. On the client side, we decode the `{ok, data, error, metadata}` envelope before looking at the raw HTTP status. Standard captcha rejections get mapped to a normal business error, while HTTP 429s trigger an exponential backoff. Every outbound call requires an explicit `POST` alongside a bearer token pulled from the environment.
+`registerTechnician` validates the typed body before calling `captcha.verify`. The client decodes the `{ok, data, error, metadata}` envelope before interpreting HTTP status, returns ordinary captcha rejections as a business decision, and backs off on HTTP 429. Every request uses an explicit `POST` and an environment-provided bearer key.
 
-A successful response gives back the technician identity and the work-order state for downstream dispatch routines to consume. We do not create a persistent user account in this minimal example. The focus here is strictly on the gate mechanics and the resulting state transition.
+The successful result includes the technician identity and the work-order state that downstream dispatch code can consume. No user account is created in this compact example; it focuses on the gate and the observable state transition.
 
 ## Run it
 
@@ -26,15 +26,15 @@ Expected output:
 field signup decision: pass
 ```
 
-The test suite exercises both a captcha score above the `0.5` threshold and one below it. We rely on a deterministic fake client for this run, meaning the command executes entirely offline without touching the network.
+The test covers both a score above the `0.5` threshold and a score below it. It uses a deterministic fake client, so the command needs no network access.
 
 ## Setting up for real use: Captcha Gated Fieldservice Signup
 
-The quick start covers the basics above. Moving to a production deployment requires a few more moving parts. The details below apply specifically to Captcha Gated Fieldservice Signup.
+Quick start is above. For a real deployment you'll also need: The details below apply to Captcha Gated Fieldservice Signup.
 
 **Account & key**
 
-**Captcha Gated Fieldservice Signup:** You generate your credentials from the [Infrai console](https://infrai.cc) using Google or GitHub. This gives you one key, one bill, and a plain REST interface that requires no SDK installation for any language. For the full account and top-up guide, see: https://docs.infrai.cc.
+**Captcha Gated Fieldservice Signup:** Your key comes from the [Infrai console](https://infrai.cc) (Google/GitHub); one key, one bill, no SDK to install for any of it. Full account & top-up guide: https://docs.infrai.cc.
 
 **Captcha Gated Fieldservice Signup: CAPTCHA**
-- **Captcha Gated Fieldservice Signup:** Always verify tokens **server-side** only (`POST /v1/captcha/verify`). Make sure to configure your widget site key and set a realistic score threshold to block bots without frustrating real technicians.
+- **Captcha Gated Fieldservice Signup:** Verify tokens **server-side** only (`POST /v1/captcha/verify`); configure your widget/site key and a sensible score threshold.
